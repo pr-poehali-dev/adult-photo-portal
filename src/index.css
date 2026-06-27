@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 270 30% 6%;
+    --foreground: 300 20% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 270 30% 9%;
+    --card-foreground: 300 20% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 270 30% 9%;
+    --popover-foreground: 300 20% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 320 90% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 270 25% 16%;
+    --secondary-foreground: 300 20% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 270 25% 14%;
+    --muted-foreground: 280 12% 62%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 265 90% 62%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 280 25% 18%;
+    --input: 280 25% 18%;
+    --ring: 320 90% 58%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -97,5 +97,93 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Golos Text", sans-serif;
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: "Unbounded", sans-serif;
+  }
+}
+
+@layer utilities {
+  .neon-glow {
+    box-shadow:
+      0 0 20px hsl(320 90% 58% / 0.4),
+      0 0 60px hsl(265 90% 62% / 0.2);
+  }
+  .neon-text {
+    text-shadow:
+      0 0 20px hsl(320 90% 58% / 0.6),
+      0 0 40px hsl(265 90% 62% / 0.4);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(hsl(280 50% 30% / 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(280 50% 30% / 0.15) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .gradient-mesh {
+    background:
+      radial-gradient(
+        circle at 20% 20%,
+        hsl(320 90% 40% / 0.3),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 80% 30%,
+        hsl(265 90% 50% / 0.3),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 50% 80%,
+        hsl(290 90% 45% / 0.25),
+        transparent 45%
+      );
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 20px hsl(320 90% 58% / 0.4),
+      0 0 60px hsl(265 90% 62% / 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 40px hsl(320 90% 58% / 0.7),
+      0 0 90px hsl(265 90% 62% / 0.4);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out both;
 }
