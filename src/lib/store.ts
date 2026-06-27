@@ -52,5 +52,35 @@ export const saveLinks = (links: SiteLink[]) => post({ action: 'saveLinks', link
 
 export const deleteVideo = () => post({ action: 'deleteVideo' });
 
-export const uploadVideo = (fileBase64: string, fileName: string) =>
-  post({ action: 'uploadVideo', fileBase64, fileName });
+export async function uploadVideoFile(
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<SiteData> {
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getUploadUrl', fileName: file.name }),
+  });
+  if (!res.ok) throw new Error('presign failed');
+  const { uploadUrl, cdnUrl, contentType } = await res.json();
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', contentType);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`S3 ${xhr.status}`)));
+    xhr.onerror = () => reject(new Error('network error'));
+    xhr.send(file);
+  });
+
+  const confirm = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'confirmUpload', cdnUrl, fileName: file.name }),
+  });
+  if (!confirm.ok) throw new Error('confirm failed');
+  return confirm.json();
+}

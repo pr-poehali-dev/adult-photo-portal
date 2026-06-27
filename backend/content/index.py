@@ -1,6 +1,5 @@
 import json
 import os
-import base64
 import uuid
 import psycopg2
 
@@ -78,19 +77,29 @@ def get_content(conn):
     }
 
 
-def upload_video(body):
+def make_s3():
     import boto3
-    data = base64.b64decode(body['fileBase64'])
-    ext = body.get('fileName', 'video.mp4').split('.')[-1].lower()
-    key = f"videos/{uuid.uuid4().hex}.{ext}"
-    s3 = boto3.client(
+    return boto3.client(
         's3', endpoint_url='https://bucket.poehali.dev',
         aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
         aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+        region_name='us-east-1',
     )
-    ctype = 'video/mp4' if ext == 'mp4' else ('video/webm' if ext == 'webm' else 'video/quicktime')
-    s3.put_object(Bucket='files', Key=key, Body=data, ContentType=ctype)
-    return f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+
+
+def get_presigned_url(body):
+    ext = body.get('fileName', 'video.mp4').split('.')[-1].lower()
+    key = f"videos/{uuid.uuid4().hex}.{ext}"
+    ctype_map = {'mp4': 'video/mp4', 'webm': 'video/webm', 'mov': 'video/quicktime'}
+    ctype = ctype_map.get(ext, 'video/mp4')
+    s3 = make_s3()
+    presigned = s3.generate_presigned_url(
+        'put_object',
+        Params={'Bucket': 'files', 'Key': key, 'ContentType': ctype},
+        ExpiresIn=600,
+    )
+    cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+    return presigned, cdn_url, ctype
 
 
 def handler(event, context):
@@ -112,10 +121,16 @@ def handler(event, context):
     action = body.get('action')
     cur = conn.cursor()
 
-    if action == 'uploadVideo':
-        url = upload_video(body)
+    if action == 'getUploadUrl':
+        presigned, cdn_url, ctype = get_presigned_url(body)
+        cur.close()
+        conn.close()
+        return {'statusCode': 200, 'headers': {**CORS, 'Content-Type': 'application/json'},
+                'body': json.dumps({'uploadUrl': presigned, 'cdnUrl': cdn_url, 'contentType': ctype})}
+
+    elif action == 'confirmUpload':
         cur.execute('UPDATE site_settings SET video_url=%s, video_name=%s, updated_at=NOW() WHERE id=1',
-                    (url, body.get('fileName', '')))
+                    (body.get('cdnUrl', ''), body.get('fileName', '')))
         conn.commit()
 
     elif action == 'saveSettings':

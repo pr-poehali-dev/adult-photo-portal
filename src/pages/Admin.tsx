@@ -10,7 +10,7 @@ import {
   fetchData,
   saveSettings,
   saveLinks,
-  uploadVideo,
+  uploadVideoFile,
   deleteVideo,
   SiteData,
   SiteLink,
@@ -19,6 +19,7 @@ import {
 const Admin = () => {
   const [data, setData] = useState<SiteData | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -34,20 +35,16 @@ const Admin = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadPct(0);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const fresh = await uploadVideo(base64, file.name);
+      const fresh = await uploadVideoFile(file, setUploadPct);
       setData(fresh);
       toast({ title: 'Видео загружено', description: file.name });
     } catch {
       toast({ title: 'Ошибка загрузки', description: 'Попробуйте другой файл', variant: 'destructive' });
     } finally {
       setUploading(false);
+      setUploadPct(0);
     }
   };
 
@@ -162,11 +159,17 @@ const Admin = () => {
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="w-full py-10 rounded-xl border-2 border-dashed border-border hover:border-primary/60 transition-colors flex flex-col items-center gap-2 text-muted-foreground disabled:opacity-60"
+              className="w-full py-10 rounded-xl border-2 border-dashed border-border hover:border-primary/60 transition-colors flex flex-col items-center gap-3 text-muted-foreground disabled:opacity-80"
             >
               <Icon name={uploading ? 'Loader2' : 'Upload'} size={28} className={`text-primary ${uploading ? 'animate-spin' : ''}`} />
-              <span className="font-semibold">{uploading ? 'Загружаю...' : 'Загрузить видео с компьютера'}</span>
-              <span className="text-xs">MP4, WebM, MOV</span>
+              <span className="font-semibold">{uploading ? `Загружаю... ${uploadPct}%` : 'Загрузить видео с компьютера'}</span>
+              {uploading ? (
+                <div className="w-48 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${uploadPct}%` }} />
+                </div>
+              ) : (
+                <span className="text-xs">MP4, WebM, MOV — любой размер</span>
+              )}
             </button>
           )}
         </section>
