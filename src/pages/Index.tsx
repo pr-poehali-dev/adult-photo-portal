@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { loadData, SiteData } from '@/lib/store';
+import { fetchData, SiteData } from '@/lib/store';
 
 const Index = () => {
   const [data, setData] = useState<SiteData | null>(null);
   const [ageOk, setAgeOk] = useState(false);
 
   useEffect(() => {
-    setData(loadData());
+    fetchData().then(setData).catch(() => setData(null));
     setAgeOk(sessionStorage.getItem('age_ok') === '1');
   }, []);
 

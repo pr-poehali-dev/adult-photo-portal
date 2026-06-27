@@ -6,26 +6,55 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { loadData, saveData, SiteData, SiteLink } from '@/lib/store';
+import {
+  fetchData,
+  saveSettings,
+  saveLinks,
+  uploadVideo,
+  deleteVideo,
+  SiteData,
+  SiteLink,
+} from '@/lib/store';
 
 const Admin = () => {
   const [data, setData] = useState<SiteData | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setData(loadData());
+    fetchData().then(setData).catch(() => setData(null));
   }, []);
 
   if (!data) return null;
 
   const update = (patch: Partial<SiteData>) => setData({ ...data, ...patch });
 
-  const handleVideo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    update({ videoUrl: url, videoName: file.name });
-    toast({ title: 'Видео добавлено', description: file.name });
+    setUploading(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const fresh = await uploadVideo(base64, file.name);
+      setData(fresh);
+      toast({ title: 'Видео загружено', description: file.name });
+    } catch {
+      toast({ title: 'Ошибка загрузки', description: 'Попробуйте другой файл', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeVideo = async () => {
+    const fresh = await deleteVideo();
+    setData(fresh);
+    toast({ title: 'Видео удалено' });
   };
 
   const updateLink = (id: string, patch: Partial<SiteLink>) =>
@@ -42,9 +71,18 @@ const Admin = () => {
       ],
     });
 
-  const save = () => {
-    saveData(data);
-    toast({ title: 'Сохранено', description: 'Изменения применены на сайте' });
+  const save = async () => {
+    setSaving(true);
+    try {
+      await saveSettings({ title: data.title, description: data.description, ageWarning: data.ageWarning });
+      const fresh = await saveLinks(data.links);
+      setData(fresh);
+      toast({ title: 'Сохранено', description: 'Изменения применены на сайте' });
+    } catch {
+      toast({ title: 'Ошибка сохранения', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -57,9 +95,9 @@ const Admin = () => {
             </Link>
             <h1 className="font-display font-bold text-lg">Админка</h1>
           </div>
-          <Button onClick={save} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
-            <Icon name="Save" size={16} className="mr-2" />
-            Сохранить
+          <Button onClick={save} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
+            <Icon name={saving ? 'Loader2' : 'Save'} size={16} className={`mr-2 ${saving ? 'animate-spin' : ''}`} />
+            {saving ? 'Сохраняю...' : 'Сохранить'}
           </Button>
         </div>
       </header>
@@ -101,7 +139,7 @@ const Admin = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => update({ videoUrl: '', videoName: '' })}
+                  onClick={removeVideo}
                   className="rounded-lg text-destructive border-border"
                 >
                   <Icon name="Trash2" size={15} className="mr-1.5" /> Удалить
@@ -111,10 +149,11 @@ const Admin = () => {
           ) : (
             <button
               onClick={() => fileRef.current?.click()}
-              className="w-full py-10 rounded-xl border-2 border-dashed border-border hover:border-primary/60 transition-colors flex flex-col items-center gap-2 text-muted-foreground"
+              disabled={uploading}
+              className="w-full py-10 rounded-xl border-2 border-dashed border-border hover:border-primary/60 transition-colors flex flex-col items-center gap-2 text-muted-foreground disabled:opacity-60"
             >
-              <Icon name="Upload" size={28} className="text-primary" />
-              <span className="font-semibold">Загрузить видео с компьютера</span>
+              <Icon name={uploading ? 'Loader2' : 'Upload'} size={28} className={`text-primary ${uploading ? 'animate-spin' : ''}`} />
+              <span className="font-semibold">{uploading ? 'Загружаю...' : 'Загрузить видео с компьютера'}</span>
               <span className="text-xs">MP4, WebM, MOV</span>
             </button>
           )}

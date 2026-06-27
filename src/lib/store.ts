@@ -1,3 +1,7 @@
+import funcUrls from '../../backend/func2url.json';
+
+const API = (funcUrls as Record<string, string>).content;
+
 export interface SiteLink {
   id: string;
   title: string;
@@ -14,32 +18,37 @@ export interface SiteData {
   ageWarning: string;
 }
 
-const STORAGE_KEY = 'site_data_v1';
-
 export const defaultData: SiteData = {
   title: 'NEON GATE',
-  description:
-    'Эксклюзивный контент для взрослых. Оживляем фотографии и видео с помощью передовых технологий. Только проверенные материалы 18+.',
+  description: '',
   videoUrl: '',
   videoName: '',
   ageWarning: 'Контент предназначен только для лиц старше 18 лет.',
-  links: [
-    { id: '1', title: 'Telegram канал', url: 'https://t.me', icon: 'Send' },
-    { id: '2', title: 'Закрытый чат', url: 'https://t.me', icon: 'Lock' },
-    { id: '3', title: 'Премиум доступ', url: '#', icon: 'Crown' },
-  ],
+  links: [],
 };
 
-export function loadData(): SiteData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultData;
-    return { ...defaultData, ...JSON.parse(raw) };
-  } catch {
-    return defaultData;
-  }
+export async function fetchData(): Promise<SiteData> {
+  const res = await fetch(API);
+  if (!res.ok) throw new Error('fetch failed');
+  return res.json();
 }
 
-export function saveData(data: SiteData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+async function post(payload: Record<string, unknown>): Promise<SiteData> {
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('request failed');
+  return res.json();
 }
+
+export const saveSettings = (d: Pick<SiteData, 'title' | 'description' | 'ageWarning'>) =>
+  post({ action: 'saveSettings', ...d });
+
+export const saveLinks = (links: SiteLink[]) => post({ action: 'saveLinks', links });
+
+export const deleteVideo = () => post({ action: 'deleteVideo' });
+
+export const uploadVideo = (fileBase64: string, fileName: string) =>
+  post({ action: 'uploadVideo', fileBase64, fileName });

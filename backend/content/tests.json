@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Get content returns settings",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"title": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Save settings",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "saveSettings", "title": "NEON GATE", "description": "desc", "ageWarning": "18+"},
+      "expectedStatus": 200,
+      "expectedBody": {"title": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
