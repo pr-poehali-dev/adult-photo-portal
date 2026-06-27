@@ -29,6 +29,7 @@ def ensure_schema(conn):
             video_url TEXT NOT NULL DEFAULT '',
             video_name TEXT NOT NULL DEFAULT '',
             age_warning TEXT NOT NULL DEFAULT '',
+            show_age_gate BOOLEAN NOT NULL DEFAULT TRUE,
             updated_at TIMESTAMP NOT NULL DEFAULT NOW()
         )
     ''')
@@ -42,6 +43,10 @@ def ensure_schema(conn):
             created_at TIMESTAMP NOT NULL DEFAULT NOW()
         )
     ''')
+    cur.execute("""
+        ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS show_age_gate BOOLEAN NOT NULL DEFAULT TRUE
+    """)
+    conn.commit()
     cur.execute('SELECT COUNT(*) FROM site_settings WHERE id = 1')
     if cur.fetchone()[0] == 0:
         cur.execute(
@@ -62,14 +67,14 @@ def ensure_schema(conn):
 
 def get_content(conn):
     cur = conn.cursor()
-    cur.execute('SELECT title, description, video_url, video_name, age_warning FROM site_settings WHERE id = 1')
+    cur.execute('SELECT title, description, video_url, video_name, age_warning, show_age_gate FROM site_settings WHERE id = 1')
     s = cur.fetchone()
     cur.execute('SELECT id, title, url, icon FROM site_links ORDER BY sort_order, id')
     links = [{'id': str(r[0]), 'title': r[1], 'url': r[2], 'icon': r[3]} for r in cur.fetchall()]
     cur.close()
     return {
         'title': s[0], 'description': s[1], 'videoUrl': s[2],
-        'videoName': s[3], 'ageWarning': s[4], 'links': links,
+        'videoName': s[3], 'ageWarning': s[4], 'showAgeGate': s[5], 'links': links,
     }
 
 
@@ -115,8 +120,8 @@ def handler(event, context):
 
     elif action == 'saveSettings':
         cur.execute(
-            'UPDATE site_settings SET title=%s, description=%s, age_warning=%s, updated_at=NOW() WHERE id=1',
-            (body.get('title', ''), body.get('description', ''), body.get('ageWarning', '')))
+            'UPDATE site_settings SET title=%s, description=%s, age_warning=%s, show_age_gate=%s, updated_at=NOW() WHERE id=1',
+            (body.get('title', ''), body.get('description', ''), body.get('ageWarning', ''), bool(body.get('showAgeGate', True))))
         conn.commit()
 
     elif action == 'deleteVideo':

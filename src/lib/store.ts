@@ -16,6 +16,7 @@ export interface SiteData {
   videoName: string;
   links: SiteLink[];
   ageWarning: string;
+  showAgeGate: boolean;
 }
 
 export const defaultData: SiteData = {
@@ -24,6 +25,7 @@ export const defaultData: SiteData = {
   videoUrl: '',
   videoName: '',
   ageWarning: 'Контент предназначен только для лиц старше 18 лет.',
+  showAgeGate: true,
   links: [],
 };
 
@@ -43,7 +45,7 @@ async function post(payload: Record<string, unknown>): Promise<SiteData> {
   return res.json();
 }
 
-export const saveSettings = (d: Pick<SiteData, 'title' | 'description' | 'ageWarning'>) =>
+export const saveSettings = (d: Pick<SiteData, 'title' | 'description' | 'ageWarning' | 'showAgeGate'>) =>
   post({ action: 'saveSettings', ...d });
 
 export const saveLinks = (links: SiteLink[]) => post({ action: 'saveLinks', links });

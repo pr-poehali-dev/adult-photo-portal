@@ -74,7 +74,7 @@ const Admin = () => {
   const save = async () => {
     setSaving(true);
     try {
-      await saveSettings({ title: data.title, description: data.description, ageWarning: data.ageWarning });
+      await saveSettings({ title: data.title, description: data.description, ageWarning: data.ageWarning, showAgeGate: data.showAgeGate });
       const fresh = await saveLinks(data.links);
       setData(fresh);
       toast({ title: 'Сохранено', description: 'Изменения применены на сайте' });
@@ -123,6 +123,18 @@ const Admin = () => {
           <div className="space-y-2">
             <Label>Текст предупреждения 18+</Label>
             <Input value={data.ageWarning} onChange={(e) => update({ ageWarning: e.target.value })} className="rounded-xl" />
+          </div>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/40 border border-border">
+            <div>
+              <p className="font-semibold text-sm">Подтверждение возраста 18+</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Показывать заглушку при входе на сайт</p>
+            </div>
+            <button
+              onClick={() => update({ showAgeGate: !data.showAgeGate })}
+              className={`relative w-12 h-6 rounded-full transition-colors ${data.showAgeGate ? 'bg-primary' : 'bg-muted'}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${data.showAgeGate ? 'left-7' : 'left-1'}`} />
+            </button>
           </div>
         </section>
 

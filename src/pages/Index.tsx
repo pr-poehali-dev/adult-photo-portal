@@ -20,7 +20,7 @@ const Index = () => {
 
   if (!data) return null;
 
-  if (!ageOk) {
+  if (data.showAgeGate && !ageOk) {
     return (
       <div className="min-h-screen gradient-mesh grid-bg flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 text-center animate-fade-up neon-glow">
